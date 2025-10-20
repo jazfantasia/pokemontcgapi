@@ -34,27 +34,45 @@ app.get("/", (req, res) => {
   res.send("Welcome to your Pokémon TCG API (JS version)!");
 });
 
-// Return the full card JSON
-app.get("/cards", (req, res) => {
-  res.json(CARDS);
-});
+
+const setsPath = path.join("sets/en.json");
+let SETS = [];
+
+try {
+  const rawData = fs.readFileSync(setsPath, "utf-8");
+  SETS = JSON.parse(rawData);
+  console.log(`Loaded ${SETS.length} sets.`);
+} catch (err) {
+  console.error("Error reading sets JSON:", err);
+}
+
+function getSetForCard(card) {
+  const setId = card.id.split("-")[0];
+  return SETS.find(set => set.id === setId);
+}
+
 
 app.get("/sets", (req, res) => {
-    const setsMap = new Map();
+  const setsMap = new Map();
 
-    CARDS.forEach(card => {
-        if (card.set && card.set.id && card.set.name) {
-            if (!setsMap.has(card.set.id)) {
-                setsMap.set(card.set.id, {
-                    id: card.set.id,
-                    name: card.set.name
-                });
-            }
-        }
-    });
+  CARDS.forEach(card => {
+    const set = getSetForCard(card);
+    if (set && !setsMap.has(set.id)) {
+      setsMap.set(set.id, set);
+    }
+  });
 
-    const uniqueSets = Array.from(setsMap.values());
-    res.json(uniqueSets);
+  const uniqueSets = Array.from(setsMap.values());
+  res.json(uniqueSets);
+});
+
+// Return the full card JSON
+app.get("/cards", (req, res) => {
+  const cardsWithSet = CARDS.map(card => ({
+    ...card,
+    set: getSetForCard(card)
+  }));
+  res.json(cardsWithSet);
 });
 
 // Start server

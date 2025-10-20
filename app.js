@@ -39,6 +39,24 @@ app.get("/cards", (req, res) => {
   res.json(CARDS);
 });
 
+app.get("/sets", (req, res) => {
+    const setsMap = new Map();
+
+    CARDS.forEach(card => {
+        if (card.set && card.set.id && card.set.name) {
+            if (!setsMap.has(card.set.id)) {
+                setsMap.set(card.set.id, {
+                    id: card.set.id,
+                    name: card.set.name
+                });
+            }
+        }
+    });
+
+    const uniqueSets = Array.from(setsMap.values());
+    res.json(uniqueSets);
+});
+
 // Start server
 app.listen(PORT, () => {
   console.log(`Server running at http://localhost:${PORT}`);
